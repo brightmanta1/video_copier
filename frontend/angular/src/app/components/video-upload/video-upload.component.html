@@ -1,0 +1,111 @@
+<div class="video-upload-container">
+  <h1>Video Copier</h1>
+  <p class="description">Загрузите исходное видео для анализа и целевое видео, к которому нужно применить структуру исходного.</p>
+
+  <div class="upload-section">
+    <form [formGroup]="uploadForm">
+      <div class="video-row">
+        <div class="video-column">
+          <h2>Исходное видео</h2>
+          <div class="upload-box" 
+               (click)="sourceInput.click()" 
+               [class.with-preview]="sourceVideoUrl">
+            
+            <input type="file" 
+                   #sourceInput 
+                   accept="video/*" 
+                   (change)="onSourceVideoSelected($event)" 
+                   style="display: none">
+            
+            <div *ngIf="!sourceVideoUrl" class="placeholder">
+              <mat-icon>cloud_upload</mat-icon>
+              <p>Выберите видео или перетащите его сюда</p>
+            </div>
+            
+            <video *ngIf="sourceVideoUrl" [src]="sourceVideoUrl" controls></video>
+          </div>
+          
+          <button mat-raised-button 
+                  color="primary" 
+                  [disabled]="!sourceVideo || isLoading" 
+                  (click)="analyzeSourceVideo()">
+            <mat-icon>analytics</mat-icon>
+            Анализировать
+          </button>
+        </div>
+        
+        <div class="video-column">
+          <h2>Целевое видео</h2>
+          <div class="upload-box" 
+               (click)="targetInput.click()" 
+               [class.with-preview]="targetVideoUrl">
+            
+            <input type="file" 
+                   #targetInput 
+                   accept="video/*" 
+                   (change)="onTargetVideoSelected($event)" 
+                   style="display: none">
+            
+            <div *ngIf="!targetVideoUrl" class="placeholder">
+              <mat-icon>cloud_upload</mat-icon>
+              <p>Выберите видео или перетащите его сюда</p>
+            </div>
+            
+            <video *ngIf="targetVideoUrl" [src]="targetVideoUrl" controls></video>
+          </div>
+          
+          <button mat-raised-button 
+                  color="accent" 
+                  [disabled]="!targetVideo || !videoAnalysis || isLoading" 
+                  (click)="applyToTargetVideo()">
+            <mat-icon>movie</mat-icon>
+            Применить структуру
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-overlay">
+    <mat-spinner></mat-spinner>
+    <p>Обработка видео...</p>
+  </div>
+
+  <div *ngIf="videoAnalysis" class="analysis-results">
+    <h2>Результаты анализа</h2>
+    <div class="analysis-details">
+      <p><strong>Всего кадров:</strong> {{ videoAnalysis.total_frames }}</p>
+      <p><strong>Количество сцен:</strong> {{ videoAnalysis.shots.length }}</p>
+      
+      <div class="shots-list">
+        <h3>Сцены</h3>
+        <mat-list>
+          <mat-list-item *ngFor="let shot of videoAnalysis.shots; let i = index">
+            Сцена {{i+1}}: {{shot.duration_frames}} кадров 
+            (Тип: {{shot.features.shot_type}}, Размер: {{shot.features.shot_size}})
+          </mat-list-item>
+        </mat-list>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="resultVideoUrl" class="result-container">
+    <h2>Результат</h2>
+    <div class="result-video">
+      <video [src]="resultVideoUrl" controls></video>
+    </div>
+    <a mat-button [href]="resultVideoUrl" download>
+      <mat-icon>download</mat-icon>
+      Скачать видео
+    </a>
+  </div>
+
+  <div class="actions">
+    <button mat-raised-button 
+            color="warn" 
+            (click)="resetAll()">
+      <mat-icon>refresh</mat-icon>
+      Сбросить всё
+    </button>
+  </div>
+</div> 

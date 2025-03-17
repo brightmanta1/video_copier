@@ -1,0 +1,35 @@
+{
+  "name": "video-copier",
+  "version": "1.0.0",
+  "description": "Система для анализа и копирования структуры видео",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "install:frontend": "cd frontend/angular && npm install",
+    "install:all": "npm run install:frontend",
+    "build:frontend": "cd frontend/angular && npm run build",
+    "build": "npm run build:frontend",
+    "start:frontend": "cd frontend/angular && npm start",
+    "start:backend": "cd backend/python && python run.py",
+    "start": "npm run start:backend",
+    "test": "cd frontend/angular && npm test"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/video-copier.git"
+  },
+  "keywords": [
+    "video",
+    "analysis",
+    "editing",
+    "angular",
+    "python",
+    "flask"
+  ],
+  "author": "",
+  "license": "MIT"
+} 
