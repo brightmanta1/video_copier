@@ -1,0 +1,58 @@
+{
+  "dataset_name": "Edit3K",
+  "version": "2.0.0",
+  "description": "Датасет для анализа эффектов видеоредактирования и переходов",
+  "total_videos": 3129,
+  "total_effects": 12517,
+  "effect_categories": [
+    "cut",
+    "dissolve",
+    "fade_in",
+    "fade_out",
+    "wipe",
+    "slide",
+    "push",
+    "flash",
+    "cross_zoom",
+    "rotation",
+    "blur_transition",
+    "color_transfer"
+  ],
+  "samples": [
+    {
+      "id": "EDIT001",
+      "filename": "edit_001.mp4",
+      "duration": 18.35,
+      "effects": [
+        {"start": 0.0, "end": 0.8, "type": "fade_in", "parameters": {"intensity": 1.0}},
+        {"start": 5.2, "end": 6.1, "type": "dissolve", "parameters": {"intensity": 0.8}},
+        {"start": 12.4, "end": 13.2, "type": "cross_zoom", "parameters": {"zoom_factor": 1.5}},
+        {"start": 17.5, "end": 18.35, "type": "fade_out", "parameters": {"intensity": 1.0}}
+      ]
+    },
+    {
+      "id": "EDIT002",
+      "filename": "edit_002.mp4",
+      "duration": 22.12,
+      "effects": [
+        {"start": 0.0, "end": 0.9, "type": "fade_in", "parameters": {"intensity": 0.9}},
+        {"start": 4.7, "end": 5.5, "type": "cut", "parameters": {}},
+        {"start": 9.8, "end": 10.7, "type": "slide", "parameters": {"direction": "left"}},
+        {"start": 15.3, "end": 16.2, "type": "rotation", "parameters": {"angle": 180}},
+        {"start": 21.4, "end": 22.12, "type": "fade_out", "parameters": {"intensity": 0.9}}
+      ]
+    },
+    {
+      "id": "EDIT003",
+      "filename": "edit_003.mp4",
+      "duration": 15.8,
+      "effects": [
+        {"start": 0.0, "end": 0.7, "type": "fade_in", "parameters": {"intensity": 0.85}},
+        {"start": 3.9, "end": 4.8, "type": "wipe", "parameters": {"direction": "right"}},
+        {"start": 7.5, "end": 8.4, "type": "blur_transition", "parameters": {"blur_amount": 5.0}},
+        {"start": 11.2, "end": 12.0, "type": "flash", "parameters": {"intensity": 0.7}},
+        {"start": 15.0, "end": 15.8, "type": "fade_out", "parameters": {"intensity": 0.85}}
+      ]
+    }
+  ]
+} 
