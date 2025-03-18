@@ -6,18 +6,18 @@
       "use": "@vercel/python"
     },
     {
-      "src": "frontend/angular/dist/video-copier/**",
+      "src": "frontend/angular/dist/video-copier/index.html",
       "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/backend/python/api/index.py"
+      "src": "/",
+      "dest": "/frontend/angular/dist/video-copier/index.html"
     },
     {
-      "src": "/(.*)",
-      "dest": "/frontend/angular/dist/video-copier/$1"
+      "src": "/api/(.*)",
+      "dest": "backend/python/api/index.py"
     }
   ],
   "env": {
