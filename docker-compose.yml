@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  tensorflow:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"  # Для API Flask
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all  # Для использования GPU
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+  
+  # Сервис для обучения моделей
+  train:
+    build: .
+    volumes:
+      - .:/app
+      - trained_models:/app/backend/ai_service/trained_models
+    command: python /app/backend/ai_service/run_training.py
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+  
+  # Сервис для запуска Flask приложения
+  api:
+    build: .
+    volumes:
+      - .:/app
+      - trained_models:/app/backend/ai_service/trained_models
+    ports:
+      - "5000:5000"
+    command: python /app/backend/python/run.py
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=/app/backend/python/run.py
+
+volumes:
+  trained_models:  # Именованный том для хранения обученных моделей 

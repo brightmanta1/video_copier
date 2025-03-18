@@ -1,104 +1,114 @@
-# AI Service для Video Copier
+# AI-сервис для Video Copier
 
-Данный модуль отвечает за обучение и использование моделей машинного обучения для анализа видео.
+Модуль искусственного интеллекта для анализа и обработки видео.
 
-## Модели
+## Возможности
 
-В проекте используются две основные модели:
+- Обнаружение эффектов в видео (переходы, фильтры и т.д.)
+- Классификация типов кадров
+- Анализ сцен и переходов
+- Распознавание шаблонов монтажа
 
-1. **ShotClassifier** - классификатор типов кадров (wide shot, medium shot, close-up и т.д.) на основе датасета AVE
-2. **EffectDetector** - детектор эффектов и переходов на основе датасета Edit3K
+## Требования
 
-## Датасеты
+Для работы AI-сервиса требуется одно из следующих:
 
-Для обучения моделей используются следующие открытые датасеты:
+1. **Python с установленным TensorFlow**:
+   - Python 3.10 или ниже (TensorFlow не поддерживает Python 3.11+)
+   - TensorFlow 2.9+
+   - Необходимые библиотеки из `requirements.txt`
 
-- **AVE (Audio-Visual Event)** - [github.com/dawitmureja/AVE](https://github.com/dawitmureja/AVE)
-- **Edit3K** - [github.com/GX77/Edit3K](https://github.com/GX77/Edit3K)
+2. **Docker** (рекомендуется):
+   - Docker Desktop для Windows/macOS
+   - Образ с TensorFlow (создается автоматически)
 
-## Требования и зависимости
+## Установка
 
-Для работы AI Service требуются следующие библиотеки:
-
-```
-tensorflow>=2.9.0 (для Python < 3.12)
-opencv-python>=4.7.0.72
-scikit-learn>=1.2.2
-scipy>=1.10.1
-gitpython>=3.1.32
-```
-
-Полный список зависимостей доступен в файле `requirements.txt`.
-
-## Установка зависимостей
+### Вариант 1: Локальная установка
 
 ```bash
-# Установка базовых зависимостей
+# Установка зависимостей
 pip install -r backend/ai_service/requirements.txt
 
-# Для Windows с GPU (Python 3.11 и ниже)
-pip install tensorflow-directml-plugin
-```
-
-## Запуск обучения моделей
-
-1. **Полное обучение** - скачивает датасеты и обучает обе модели:
-
-```bash
+# Обучение моделей
 python backend/ai_service/run_training.py
 ```
 
-2. **Обучение только модели типов кадров**:
+### Вариант 2: Использование Docker (рекомендуется)
 
 ```bash
-python backend/ai_service/run_training.py --train-shot-only
+# Windows
+.\run-tensorflow.bat
+
+# Linux/macOS
+./scripts/docker-run.sh
 ```
 
-3. **Обучение только модели эффектов**:
+## Интеграция с проектом
 
-```bash
-python backend/ai_service/run_training.py --train-effect-only
+AI-сервис автоматически определяет доступность TensorFlow:
+
+1. Сначала проверяется локальная установка TensorFlow
+2. Если локальная установка отсутствует, используется Docker
+3. Если Docker недоступен, функции AI отключаются с соответствующими предупреждениями
+
+### Использование в коде
+
+```python
+from backend.ai_service import effect_detector
+
+# Анализ изображения на наличие эффектов
+result = effect_detector.predict(image)
+print(f"Обнаружен эффект: {result['effect']} с уверенностью {result['confidence']}")
 ```
 
-4. **Пропуск шага клонирования репозиториев**:
+## Обученные модели
+
+Обученные модели хранятся в директории `backend/ai_service/trained_models`.
+При первом запуске будут созданы простые модели, которые можно улучшить, запустив полное обучение:
 
 ```bash
-python backend/ai_service/run_training.py --skip-clone
-```
+# Локально
+python backend/ai_service/run_training.py --dataset Edit3K
 
-5. **Принудительное повторное клонирование репозиториев**:
-
-```bash
-python backend/ai_service/run_training.py --force-clone
+# Через Docker
+docker-compose run train python run_training.py --dataset Edit3K
 ```
 
 ## Структура директорий
 
 ```
 backend/ai_service/
-├── models/                 # Модели машинного обучения
-│   ├── effect_detector.py  # Детектор эффектов в видео
-│   ├── shot_classifier.py  # Классификатор типов кадров
-│   └── model_trainer.py    # Модуль для обучения моделей
-├── trained_models/         # Обученные модели сохраняются здесь
-├── run_training.py         # Скрипт для запуска обучения
-└── requirements.txt        # Зависимости AI сервиса
+├── models/               # Определения моделей
+│   ├── __init__.py
+│   ├── effect_detector.py
+│   └── example_model.py
+├── trained_models/       # Обученные модели
+│   ├── effect_detector.h5
+│   └── example_model.h5
+├── __init__.py           # Модуль AI-сервиса
+├── requirements.txt      # Зависимости
+└── README.md             # Эта документация
 ```
 
-## Возможные проблемы и их решения
+## Решение проблем
 
-### TensorFlow не устанавливается или не запускается
+### TensorFlow недоступен
 
-- **Для Python 3.12 и выше**: TensorFlow официально поддерживается только для Python 3.11 и ниже. Используйте виртуальное окружение с Python 3.11.
-- **Для Windows**: На Windows с Python 3.11 и ниже установите tensorflow-cpu и tensorflow-directml-plugin для поддержки GPU.
+Если вы видите сообщение "TensorFlow недоступен", установите Docker Desktop и запустите:
 
-### Ошибка при загрузке датасетов
+```bash
+.\run-tensorflow.bat  # для Windows
+```
 
-- Убедитесь, что у вас настроен Git и есть доступ к интернету
-- Проверьте, что репозитории доступны по URL
-- При необходимости загрузите датасеты вручную и поместите их в директории `datasets/AVE` и `datasets/Edit3K`
+### Ошибки с GPU
 
-### Недостаточно памяти для обучения
+Для использования GPU с TensorFlow через Docker:
 
-- Уменьшите batch_size при вызове метода train
-- Используйте модели с меньшим количеством параметров, изменив архитектуру в файлах моделей 
+1. Установите драйверы NVIDIA
+2. Установите NVIDIA Docker Toolkit
+3. Запустите с флагом GPU:
+
+```bash
+docker-compose run --gpus all tensorflow bash
+``` 
