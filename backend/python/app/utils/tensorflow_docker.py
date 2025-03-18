@@ -38,6 +38,15 @@ class TensorFlowDocker:
         # Эмулируем интерфейс TensorFlow
         self.keras = self.KerasInterface(self)
         self.__version__ = self._get_tf_version()
+        
+        # Добавляем атрибуты TensorFlow
+        self.constant = lambda x: x  # Простая эмуляция tf.constant
+        self.float32 = 'float32'     # Тип данных
+        self.int32 = 'int32'         # Тип данных
+        
+        # Добавляем вспомогательные функции
+        self.cast = lambda x, dtype: x  # Эмуляция tf.cast
+        self.reshape = lambda x, shape: x  # Эмуляция tf.reshape
     
     def _get_tf_version(self):
         """Получает версию TensorFlow из контейнера"""
@@ -204,6 +213,10 @@ print(json.dumps({{'result': result}}))
             self.callbacks = self.CallbacksInterface(docker_tf)
             self.utils = self.UtilsInterface(docker_tf)
             
+            # Добавляем атрибуты Keras
+            self.Sequential = self.models.Sequential
+            self.Model = self.models.Model
+            
         class ModelsInterface:
             def __init__(self, docker_tf):
                 self.docker_tf = docker_tf
@@ -213,6 +226,9 @@ print(json.dumps({{'result': result}}))
                 
             def Model(self, *args, **kwargs):
                 return self.docker_tf.run_keras_function('models.Model', *args, **kwargs)
+                
+            def Sequential(self, layers=None):
+                return self.docker_tf.run_keras_function('models.Sequential', layers)
                 
         class LayersInterface:
             def __init__(self, docker_tf):
@@ -224,12 +240,30 @@ print(json.dumps({{'result': result}}))
             def Dropout(self, *args, **kwargs):
                 return self.docker_tf.run_keras_function('layers.Dropout', *args, **kwargs)
                 
-            def GlobalAveragePooling2D(self, *args, **kwargs):
-                return self.docker_tf.run_keras_function('layers.GlobalAveragePooling2D', *args, **kwargs)
+            def Conv2D(self, *args, **kwargs):
+                return self.docker_tf.run_keras_function('layers.Conv2D', *args, **kwargs)
+                
+            def MaxPooling2D(self, *args, **kwargs):
+                return self.docker_tf.run_keras_function('layers.MaxPooling2D', *args, **kwargs)
+                
+            def BatchNormalization(self, *args, **kwargs):
+                return self.docker_tf.run_keras_function('layers.BatchNormalization', *args, **kwargs)
+                
+            def Flatten(self, *args, **kwargs):
+                return self.docker_tf.run_keras_function('layers.Flatten', *args, **kwargs)
+                
+            def TimeDistributed(self, *args, **kwargs):
+                return self.docker_tf.run_keras_function('layers.TimeDistributed', *args, **kwargs)
+                
+            def LSTM(self, *args, **kwargs):
+                return self.docker_tf.run_keras_function('layers.LSTM', *args, **kwargs)
                 
         class ApplicationsInterface:
             def __init__(self, docker_tf):
                 self.docker_tf = docker_tf
+                
+            def MobileNetV2(self, *args, **kwargs):
+                return self.docker_tf.run_keras_function('applications.MobileNetV2', *args, **kwargs)
                 
             def ResNet50(self, *args, **kwargs):
                 return self.docker_tf.run_keras_function('applications.ResNet50', *args, **kwargs)
