@@ -1,6 +1,6 @@
 # AI-сервис для Video Copier
 
-Модуль искусственного интеллекта для анализа и обработки видео.
+Модуль искусственного интеллекта для анализа и обработки видео с использованием TensorFlow через Docker.
 
 ## Возможности
 
@@ -11,30 +11,16 @@
 
 ## Требования
 
-Для работы AI-сервиса требуется одно из следующих:
+Для работы AI-сервиса требуется:
 
-1. **Python с установленным TensorFlow**:
-   - Python 3.10 или ниже (TensorFlow не поддерживает Python 3.11+)
-   - TensorFlow 2.9+
-   - Необходимые библиотеки из `requirements.txt`
+- **Docker** (обязательно)
+  - Docker Desktop для Windows/macOS
+  - Образ TensorFlow (загружается автоматически)
+  - Docker Engine для Linux
 
-2. **Docker** (рекомендуется):
-   - Docker Desktop для Windows/macOS
-   - Образ с TensorFlow (создается автоматически)
+> **Важно:** AI-сервис работает **исключительно с Docker**. Локальная установка TensorFlow не используется и не требуется.
 
-## Установка
-
-### Вариант 1: Локальная установка
-
-```bash
-# Установка зависимостей
-pip install -r backend/ai_service/requirements.txt
-
-# Обучение моделей
-python backend/ai_service/run_training.py
-```
-
-### Вариант 2: Использование Docker (рекомендуется)
+## Установка и настройка
 
 ```bash
 # Windows
@@ -44,15 +30,15 @@ python backend/ai_service/run_training.py
 ./scripts/docker-run.sh
 ```
 
+Эти скрипты автоматически:
+1. Проверят наличие Docker
+2. Загрузят образ TensorFlow, если он не установлен
+3. Запустят контейнер с TensorFlow в фоновом режиме
+4. Настроят доступ к TensorFlow через Docker API
+
 ## Интеграция с проектом
 
-AI-сервис автоматически определяет доступность TensorFlow:
-
-1. Сначала проверяется локальная установка TensorFlow
-2. Если локальная установка отсутствует, используется Docker
-3. Если Docker недоступен, функции AI отключаются с соответствующими предупреждениями
-
-### Использование в коде
+AI-сервис автоматически подключается к Docker при первом импорте:
 
 ```python
 from backend.ai_service import effect_detector
@@ -62,17 +48,16 @@ result = effect_detector.predict(image)
 print(f"Обнаружен эффект: {result['effect']} с уверенностью {result['confidence']}")
 ```
 
+Весь процесс работы с TensorFlow через Docker полностью автоматизирован и прозрачен для разработчика.
+
 ## Обученные модели
 
 Обученные модели хранятся в директории `backend/ai_service/trained_models`.
 При первом запуске будут созданы простые модели, которые можно улучшить, запустив полное обучение:
 
 ```bash
-# Локально
-python backend/ai_service/run_training.py --dataset Edit3K
-
-# Через Docker
-docker-compose run train python run_training.py --dataset Edit3K
+# Запуск обучения в Docker
+docker exec TensorFlow_CONTAINER_ID python /app/backend/ai_service/run_training.py --dataset Edit3K
 ```
 
 ## Структура директорий
@@ -91,15 +76,24 @@ backend/ai_service/
 └── README.md             # Эта документация
 ```
 
+## Технические детали работы с Docker
+
+AI-сервис использует следующий подход для работы с TensorFlow через Docker:
+
+1. При первом импорте модуля проверяется наличие запущенного контейнера Docker с TensorFlow
+2. Если контейнер не запущен, он автоматически запускается
+3. Выполнение функций TensorFlow происходит путем передачи кода в контейнер и получения результатов
+4. Прокси-классы создают иллюзию работы с обычным TensorFlow API
+
 ## Решение проблем
 
 ### TensorFlow недоступен
 
-Если вы видите сообщение "TensorFlow недоступен", установите Docker Desktop и запустите:
+Если вы видите сообщение "TensorFlow через Docker недоступен":
 
-```bash
-.\run-tensorflow.bat  # для Windows
-```
+1. Убедитесь, что Docker Desktop запущен
+2. Запустите `run-tensorflow.bat` (Windows) или `./scripts/docker-run.sh` (Linux/macOS)
+3. Проверьте статус контейнеров: `docker ps | grep tensorflow`
 
 ### Ошибки с GPU
 
@@ -110,5 +104,5 @@ backend/ai_service/
 3. Запустите с флагом GPU:
 
 ```bash
-docker-compose run --gpus all tensorflow bash
+docker run --gpus all -d --rm -v "%cd%:/app" tensorflow/tensorflow:2.12.0-gpu ...
 ``` 

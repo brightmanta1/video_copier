@@ -1,13 +1,13 @@
-import tensorflow as tf
 import numpy as np
 import os
 import json
 import cv2
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input, Dropout, Conv2D, MaxPooling2D, Flatten
-from tensorflow.keras.applications import ResNet50
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
+from backend.python.app.utils.tensorflow_docker import import_tensorflow
+
+# Импортируем TensorFlow через Docker
+tf = import_tensorflow()
+if tf is None:
+    raise ImportError("TensorFlow через Docker недоступен")
 
 class ShotClassifier:
     """
@@ -33,24 +33,24 @@ class ShotClassifier:
     
     def _build_model(self):
         """Создает архитектуру модели на основе ResNet50"""
-        base_model = ResNet50(weights='imagenet', include_top=False, input_shape=self.input_shape)
+        base_model = tf.keras.applications.ResNet50(weights='imagenet', include_top=False, input_shape=self.input_shape)
         
         # Замораживаем часть слоев базовой модели
         for layer in base_model.layers[:-15]:
             layer.trainable = False
         
         x = base_model.output
-        x = GlobalAveragePooling2D()(x)
-        x = Dense(512, activation='relu')(x)
-        x = Dropout(0.5)(x)
-        x = Dense(256, activation='relu')(x)
-        x = Dropout(0.3)(x)
-        predictions = Dense(self.num_classes, activation='softmax')(x)
+        x = tf.keras.layers.GlobalAveragePooling2D()(x)
+        x = tf.keras.layers.Dense(512, activation='relu')(x)
+        x = tf.keras.layers.Dropout(0.5)(x)
+        x = tf.keras.layers.Dense(256, activation='relu')(x)
+        x = tf.keras.layers.Dropout(0.3)(x)
+        predictions = tf.keras.layers.Dense(self.num_classes, activation='softmax')(x)
         
-        model = Model(inputs=base_model.input, outputs=predictions)
+        model = tf.keras.Model(inputs=base_model.input, outputs=predictions)
         
         model.compile(
-            optimizer=Adam(learning_rate=0.0001),
+            optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
             loss='categorical_crossentropy',
             metrics=['accuracy']
         )
@@ -94,7 +94,7 @@ class ShotClassifier:
     
     def _default_callbacks(self):
         """Создает стандартный набор callbacks для обучения"""
-        checkpoint = ModelCheckpoint(
+        checkpoint = tf.keras.callbacks.ModelCheckpoint(
             'shot_classifier_best.h5',
             monitor='val_accuracy',
             save_best_only=True,
@@ -102,14 +102,14 @@ class ShotClassifier:
             verbose=1
         )
         
-        early_stopping = EarlyStopping(
+        early_stopping = tf.keras.callbacks.EarlyStopping(
             monitor='val_loss',
             patience=7,
             restore_best_weights=True,
             verbose=1
         )
         
-        reduce_lr = ReduceLROnPlateau(
+        reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
             monitor='val_loss',
             factor=0.2,
             patience=3,

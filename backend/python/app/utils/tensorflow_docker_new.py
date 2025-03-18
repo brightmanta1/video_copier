@@ -34,29 +34,6 @@ class TensorFlowDocker:
             logger.info("TensorFlow будет использоваться только из Docker")
             self._check_docker()
             self._initialization_checked = True
-            
-        # Эмулируем интерфейс TensorFlow
-        self.keras = self.KerasInterface(self)
-        self.__version__ = self._get_tf_version()
-    
-    def _get_tf_version(self):
-        """Получает версию TensorFlow из контейнера"""
-        if not self.ensure_tensorflow_available():
-            return "unknown"
-            
-        try:
-            result = subprocess.run(
-                ["docker", "exec", self._docker_container_id, "python", "-c",
-                 "import tensorflow as tf; print(tf.__version__)"],
-                capture_output=True,
-                text=True,
-                check=False
-            )
-            if result.returncode == 0:
-                return result.stdout.strip()
-        except Exception:
-            pass
-        return "unknown"
     
     def _check_docker(self):
         """Проверка наличия Docker и контейнера TensorFlow"""
@@ -131,60 +108,79 @@ class TensorFlowDocker:
             
         return True
     
-    def run_keras_function(self, function_path, *args, **kwargs):
-        """Запускает функцию keras через Docker"""
-        return self.run_tensorflow_function('keras.' + function_path, None, *args, **kwargs)
-        
     def run_tensorflow_function(self, function_module, function_name, *args, **kwargs):
         """
         Запускает функцию TensorFlow в Docker
         
         Args:
-            function_module: путь к функции (например, 'keras.models.load_model')
-            function_name: имя функции (не используется, оставлен для обратной совместимости)
+            function_module: модуль, содержащий функцию
+            function_name: имя функции
             *args, **kwargs: аргументы функции
             
         Returns:
             результат выполнения функции
         """
+        # Проверяем доступность Docker TensorFlow
         if not self.ensure_tensorflow_available():
             logger.error("TensorFlow через Docker недоступен")
             return None
             
+        # Запускаем функцию в контейнере Docker
         try:
             # Формируем команду для запуска в Docker
+            project_root = Path(__file__).resolve().parents[3]  # Путь к корню проекта
+            
+            # Сериализуем аргументы в формат, который можно передать в командной строке
             args_json = json.dumps([args, kwargs])
             
-            script = f"""
-import tensorflow as tf
+            # Создаем временный Python скрипт для выполнения функции
+            script_path = project_root / "temp_tensorflow_runner.py"
+            with open(script_path, 'w') as f:
+                f.write(f"""
+import sys
 import json
-import numpy as np
+import importlib
 
-args, kwargs = json.loads('{args_json}')
-result = tf.{function_module}(*args, **kwargs)
+# Загружаем аргументы
+args_json = '{args_json}'
+args, kwargs = json.loads(args_json)
 
-if hasattr(result, 'numpy'):
-    result = result.numpy().tolist()
-elif isinstance(result, np.ndarray):
-    result = result.tolist()
+# Импортируем модуль и получаем функцию
+try:
+    module = importlib.import_module('{function_module}')
+    func = getattr(module, '{function_name}')
 
-print(json.dumps({{'result': result}}))
-            """
+    # Выполняем функцию и выводим результат
+    result = func(*args, **kwargs)
+    print(json.dumps({{'status': 'success', 'result': result}}))
+except Exception as e:
+    print(json.dumps({{'status': 'error', 'error': str(e)}}))
+                """)
             
+            # Запускаем скрипт в контейнере Docker
             result = subprocess.run(
-                ["docker", "exec", self._docker_container_id, "python", "-c", script],
-                capture_output=True,
-                text=True,
+                ["docker", "exec", self._docker_container_id, 
+                 "python", "/app/temp_tensorflow_runner.py"],
+                capture_output=True, 
+                text=True, 
                 check=False
             )
             
+            # Удаляем временный скрипт
+            os.remove(script_path)
+            
             if result.returncode != 0:
-                logger.error(f"Ошибка при выполнении функции в Docker: {result.stderr}")
+                logger.error(f"Ошибка при выполнении скрипта в Docker: {result.stderr}")
                 return None
             
+            # Анализируем результат
             try:
                 output = json.loads(result.stdout)
-                return output.get('result')
+                if output['status'] == 'success':
+                    return output['result']
+                else:
+                    logger.error(f"Ошибка при выполнении функции: {output['error']}")
+                    return None
             except json.JSONDecodeError:
                 logger.error(f"Ошибка при разборе результата: {result.stdout}")
                 return None
@@ -193,80 +189,12 @@ print(json.dumps({{'result': result}}))
             logger.error(f"Ошибка при выполнении функции в Docker: {str(e)}")
             return None
 
-    class KerasInterface:
-        """Эмуляция интерфейса Keras"""
-        def __init__(self, docker_tf):
-            self.docker_tf = docker_tf
-            self.models = self.ModelsInterface(docker_tf)
-            self.layers = self.LayersInterface(docker_tf)
-            self.applications = self.ApplicationsInterface(docker_tf)
-            self.optimizers = self.OptimizersInterface(docker_tf)
-            self.callbacks = self.CallbacksInterface(docker_tf)
-            self.utils = self.UtilsInterface(docker_tf)
-            
-        class ModelsInterface:
-            def __init__(self, docker_tf):
-                self.docker_tf = docker_tf
-                
-            def load_model(self, model_path, custom_objects=None):
-                return self.docker_tf.run_keras_function('models.load_model', model_path, custom_objects)
-                
-            def Model(self, *args, **kwargs):
-                return self.docker_tf.run_keras_function('models.Model', *args, **kwargs)
-                
-        class LayersInterface:
-            def __init__(self, docker_tf):
-                self.docker_tf = docker_tf
-                
-            def Dense(self, *args, **kwargs):
-                return self.docker_tf.run_keras_function('layers.Dense', *args, **kwargs)
-                
-            def Dropout(self, *args, **kwargs):
-                return self.docker_tf.run_keras_function('layers.Dropout', *args, **kwargs)
-                
-            def GlobalAveragePooling2D(self, *args, **kwargs):
-                return self.docker_tf.run_keras_function('layers.GlobalAveragePooling2D', *args, **kwargs)
-                
-        class ApplicationsInterface:
-            def __init__(self, docker_tf):
-                self.docker_tf = docker_tf
-                
-            def ResNet50(self, *args, **kwargs):
-                return self.docker_tf.run_keras_function('applications.ResNet50', *args, **kwargs)
-                
-        class OptimizersInterface:
-            def __init__(self, docker_tf):
-                self.docker_tf = docker_tf
-                
-            def Adam(self, *args, **kwargs):
-                return self.docker_tf.run_keras_function('optimizers.Adam', *args, **kwargs)
-                
-        class CallbacksInterface:
-            def __init__(self, docker_tf):
-                self.docker_tf = docker_tf
-                
-            def ModelCheckpoint(self, *args, **kwargs):
-                return self.docker_tf.run_keras_function('callbacks.ModelCheckpoint', *args, **kwargs)
-                
-            def EarlyStopping(self, *args, **kwargs):
-                return self.docker_tf.run_keras_function('callbacks.EarlyStopping', *args, **kwargs)
-                
-            def ReduceLROnPlateau(self, *args, **kwargs):
-                return self.docker_tf.run_keras_function('callbacks.ReduceLROnPlateau', *args, **kwargs)
-                
-        class UtilsInterface:
-            def __init__(self, docker_tf):
-                self.docker_tf = docker_tf
-                
-            def to_categorical(self, *args, **kwargs):
-                return self.docker_tf.run_keras_function('utils.to_categorical', *args, **kwargs)
-
 def import_tensorflow():
     """
     Импортирует TensorFlow через Docker
     
     Returns:
-        TensorFlowDocker: объект, эмулирующий интерфейс TensorFlow
+        объект TensorFlow или None, если импорт не удался
     """
     tf_docker = TensorFlowDocker()
     if tf_docker.is_tensorflow_available():

@@ -9,6 +9,7 @@ class AppConfig:
     Основная конфигурация приложения
     """
     # Общие настройки
+    VERSION = '0.1.0'
     DEBUG = True
     SECRET_KEY = 'video_copier_secret_key'
     
