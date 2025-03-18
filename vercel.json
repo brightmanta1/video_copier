@@ -6,12 +6,8 @@
       "use": "@vercel/python"
     },
     {
-      "src": "frontend/angular/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "frontend/angular/dist/video-copier",
-        "buildCommand": "cd frontend/angular && npm install && npm run build"
-      }
+      "src": "frontend/angular/dist/video-copier/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -20,22 +16,14 @@
       "dest": "/backend/python/api/index.py"
     },
     {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "/frontend/angular/dist/video-copier/assets/$1"
-    },
-    {
-      "src": "/(.*\\.(js|css|ico|png|jpg|svg|json))",
-      "dest": "/frontend/angular/dist/video-copier/$1"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/frontend/angular/dist/video-copier/index.html"
+      "dest": "/frontend/angular/dist/video-copier/$1"
     }
   ],
   "env": {
-    "API_BASE_URL": "/api"
+    "API_BASE_URL": "/api",
+    "FLASK_APP": "backend/python/api/index.py",
+    "FLASK_ENV": "production",
+    "PYTHONPATH": "backend/python"
   }
 } 
