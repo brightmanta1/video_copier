@@ -9,22 +9,30 @@
       "src": "frontend/angular/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist/video-copier"
+        "distDir": "frontend/angular/dist/video-copier",
+        "buildCommand": "cd frontend/angular && npm install && npm run build"
       }
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/python/api/index.py"
+      "dest": "/backend/python/api/index.py"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/frontend/angular/dist/video-copier/assets/$1"
     },
     {
       "src": "/(.*\\.(js|css|ico|png|jpg|svg|json))",
-      "dest": "frontend/angular/$1"
+      "dest": "/frontend/angular/dist/video-copier/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "frontend/angular/index.html"
+      "dest": "/frontend/angular/dist/video-copier/index.html"
     }
   ],
   "env": {
